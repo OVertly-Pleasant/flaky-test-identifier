@@ -1,0 +1,45 @@
+import typer
+from rich.table import Table
+from rich.console import Console
+from rich.style import Style
+from analyzer import connect_n_process
+import pandas as pd
+
+app = typer.Typer()
+console = Console()
+
+@app.command()
+def analyse(top: int = 5, show_passrate: bool = False):
+    pass_rate = connect_n_process(top,'commits.db')
+    table = Table(title="Flaky Test Analysis")
+    table.add_column("Test",justify="center",no_wrap=True)
+    table.add_column("Flakiness",justify="center",no_wrap=True)
+    if show_passrate:
+        table.add_column("Pass Rate",justify="center",no_wrap=True)
+    for idx,row in pass_rate.iterrows():
+        test_name = str(row['test_name'])
+        flaky_val = color_flakiness(row["flakiness"])
+        if show_passrate:
+            pass_val = f"{row['pass_rate']:.0%}" 
+            table.add_row(test_name, flaky_val, pass_val)
+        else:
+            table.add_row(test_name, flaky_val)
+    console.print(table)
+
+def color_flakiness(val: float):
+    '''
+    Colorises the flakiness based on severity
+    Score > 0.20 = Red (Highly Flaky)
+    Score > 0.10 = Yellow (Warning)
+    Score < 0.10 = Green (Stable)
+    '''
+    if val > 0.2:
+        return f"[red]{val:.2f}[/red]"
+    elif val > 0.1:
+        return f"[yellow]{val:.2f}[/yellow]"
+    else:
+        return f"[green]{val:.2f}[/green]"
+
+
+if __name__ == "__main__":
+    app()
