@@ -3,22 +3,23 @@ import requests
 import zipfile
 import io
 import sqlite3
+import typer
 import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 
+app = typer.Typer()
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-USERNAME = "OVertly-Pleasant"
-REPO = "flaky-test-demo"
+
 HEADERS = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28"
 }
 
-def get_artifacts_list():
+def get_artifacts_list(owner: str, repo: str):
     """Fetches the list of artifacts from GitHub."""
-    url = f"https://api.github.com/repos/{USERNAME}/{REPO}/actions/artifacts"
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/artifacts"
     response = requests.get(url, headers=HEADERS)
     return response.json().get("artifacts", [])
 
@@ -78,10 +79,11 @@ def save_to_database(run_id, commit_hash, parsed_results):
     conn.commit()
     conn.close()
 
-def run_pipeline():
+@app.command()
+def run_pipeline(owner:str, repo:str):
     setup_database()
-    artifacts = get_artifacts_list()
-    print(f"Found {len(artifacts)} artifacts to process.")
+    artifacts = get_artifacts_list(owner,repo)
+    print(f"Found {len(artifacts)} artifacts to process in {owner}/{repo}.")
     
     for artifact in artifacts:
         run_id = artifact["workflow_run"]["id"]
@@ -100,4 +102,4 @@ def run_pipeline():
     print("Data harvesting complete!")
 
 if __name__ == "__main__":
-    run_pipeline()
+    app()
