@@ -1,0 +1,6 @@
+venv/
+titanic/
+__pycache__/
+prototyping/
+*.db
+.env
