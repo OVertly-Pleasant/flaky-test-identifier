@@ -1,13 +1,12 @@
 from fastapi import FastAPI
-import pandas as pd
-from analyzer import connect_n_process
+from analyzer import generate_flakiness_report
 
 app = FastAPI()
 
 @app.get("/analyse")
 def analyse(owner: str, repo: str, top: int = 5, show_passrate: bool = False):
     database = f"{owner}_{repo}.db"
-    pass_rate = connect_n_process(top,database)
+    pass_rate = generate_flakiness_report(top,database)
     output = ["test_name","flakiness"]
     if show_passrate:
         output+=["pass_rate"]

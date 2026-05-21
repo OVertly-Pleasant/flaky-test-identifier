@@ -1,7 +1,7 @@
 import typer
 from rich.table import Table
 from rich.console import Console
-from analyzer import connect_n_process
+from analyzer import generate_flakiness_report
 
 app = typer.Typer()
 console = Console()
@@ -9,7 +9,7 @@ console = Console()
 @app.command()
 def analyse(owner: str = typer.Argument(),repo: str = typer.Argument(), top: int = 5, show_passrate: bool = False):
     database = f"{owner}_{repo}.db"
-    pass_rate = connect_n_process(top,database)
+    pass_rate = generate_flakiness_report(top,database)
     header = f"Flaky Test Analysis of {database}"
     table = Table(title=header)
     table.add_column("Test",justify="center",no_wrap=True)
@@ -28,14 +28,14 @@ def analyse(owner: str = typer.Argument(),repo: str = typer.Argument(), top: int
 
 def color_flakiness(val: float):
     '''
-    Colorises the flakiness based on severity
-    Score > 0.20 = Red (Highly Flaky)
-    Score > 0.10 = Yellow (Warning)
-    Score < 0.10 = Green (Stable)
+    Colorises the flakiness based on severity (0.0 to 1.0 scale)
+    Score > 0.40 = Red (Highly Flaky, flips almost every other run)
+    Score > 0.15 = Yellow (Warning, occasional flips)
+    Score <= 0.15 = Green (Stable)
     '''
-    if val > 0.2:
+    if val > 0.40:
         return f"[red]{val:.2f}[/red]"
-    elif val > 0.1:
+    elif val > 0.15:
         return f"[yellow]{val:.2f}[/yellow]"
     else:
         return f"[green]{val:.2f}[/green]"
