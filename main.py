@@ -1,17 +1,17 @@
 import typer
 from rich.table import Table
 from rich.console import Console
-from rich.style import Style
 from analyzer import connect_n_process
-import pandas as pd
 
 app = typer.Typer()
 console = Console()
 
 @app.command()
-def analyse(top: int = 5, show_passrate: bool = False):
-    pass_rate = connect_n_process(top,'commits.db')
-    table = Table(title="Flaky Test Analysis")
+def analyse(owner: str = typer.Argument(),repo: str = typer.Argument(), top: int = 5, show_passrate: bool = False):
+    database = f"{owner}_{repo}.db"
+    pass_rate = connect_n_process(top,database)
+    header = f"Flaky Test Analysis of {database}"
+    table = Table(title=header)
     table.add_column("Test",justify="center",no_wrap=True)
     table.add_column("Flakiness",justify="center",no_wrap=True)
     if show_passrate:
@@ -39,7 +39,6 @@ def color_flakiness(val: float):
         return f"[yellow]{val:.2f}[/yellow]"
     else:
         return f"[green]{val:.2f}[/green]"
-
 
 if __name__ == "__main__":
     app()
