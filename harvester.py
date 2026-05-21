@@ -44,8 +44,8 @@ def download_xml_from_artifact(download_url):
         with z.open("results.xml") as xml_file:
             return xml_file.read()
 
-def parse_test_results(xml_string):
-    """Parses JUnit XML and returns a list of tuples: [(test_name, status), ...]"""
+def parse_junit_xml(xml_string):
+    """Parses JUnit XML and extracts test status, duration, and execution order."""
     try:
         root = ET.fromstring(xml_string)
     except ET.ParseError:
@@ -53,14 +53,13 @@ def parse_test_results(xml_string):
         return []
 
     results = []
-    for testsuite in root.findall('testsuite'):
-        for testcase in testsuite.findall('testcase'):
-            name = testcase.attrib.get('name')
-            if testcase.find('failure') is not None:
-                # If there is a <failure> tag inside the testcase, it failed.
-                results.append((name, "Failed"))
-            else:
-                results.append((name, "Passed"))
+    
+    for position, testcase in enumerate(root.iter('testcase'), start=1):
+        test_name = testcase.attrib.get('name')
+        time_sec = float(testcase.attrib.get('time', 0))
+        duration_ms = int(time_sec * 1000)
+        status = "Failed" if testcase.find('failure') is not None else "Passed" 
+        results.append((test_name, status, duration_ms, position))
                 
     return results
 
@@ -70,28 +69,33 @@ def setup_database(db_name):
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS test_runs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_id INTEGER,
-            commit_hash TEXT,
-            test_name TEXT,
-            status TEXT
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id        INTEGER,
+        commit_hash   TEXT,
+        test_name     TEXT,
+        status        TEXT,
+        run_at        TEXT,
+        duration_ms   INTEGER,
+        position      INTEGER
         )
     ''')
     conn.commit()
     conn.close()
 
-def save_to_database(db_name, run_id, commit_hash, parsed_results):
+def save_test_runs(db_name, run_id, commit_hash, run_timestamp, parsed_results):
     """Inserts a list of parsed results into SQLite."""
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     
     data_to_insert = []
-    for test_name, status in parsed_results:
-        data_to_insert.append((run_id, commit_hash, test_name, status))
+    for test_name, status, duration_ms, position in parsed_results:
+        data_to_insert.append((
+            run_id, commit_hash, test_name, status, run_timestamp, duration_ms, position
+        ))
         
     cursor.executemany('''
-        INSERT INTO test_runs(run_id, commit_hash, test_name, status) 
-        VALUES(?, ?, ?, ?)
+        INSERT INTO test_runs(run_id, commit_hash, test_name, status, run_at, duration_ms, position) 
+        VALUES(?, ?, ?, ?, ?, ?, ?)
     ''', data_to_insert)
     
     conn.commit()
@@ -126,6 +130,7 @@ def run_pipeline(owner:str, repo:str):
             continue
         
         commit_hash = artifact["workflow_run"]["head_sha"]
+        run_timestamp = artifact["created_at"]
         download_url = artifact["archive_download_url"]
 
         print(f"Downloading & Processing Run ID: {run_id}...")
@@ -135,11 +140,11 @@ def run_pipeline(owner:str, repo:str):
         if xml_content is None:
             continue
         # 2. Parse XML
-        parsed_results = parse_test_results(xml_content)
+        parsed_results = parse_junit_xml(xml_content)
         if not parsed_results:
             continue # Skip if XML was malformed or empty   
         # 3. Save to DB
-        save_to_database(db_name, run_id, commit_hash, parsed_results)
+        save_test_runs(db_name, run_id, commit_hash, run_timestamp, parsed_results)
         
     print("Data harvesting complete!")
 
