@@ -1,11 +1,17 @@
 import pandas as pd
 import sqlite3
+import os
 
 
 def connect_n_process(top:int,db:str):
+    if not os.path.exists(db):
+        return pd.DataFrame(columns=['test_name', 'pass_rate', 'flakiness'])
+     
     conn = sqlite3.connect(db)
     query = "SELECT test_name, status FROM test_runs"
     test_results = pd.read_sql_query(query, conn)
+    if test_results.empty:
+        return pd.DataFrame(columns=['test_name', 'pass_rate', 'flakiness'])
     conn.close()
 
     test_results['passed'] = test_results['status'] == 'Passed'
