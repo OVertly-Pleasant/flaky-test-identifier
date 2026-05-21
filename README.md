@@ -11,6 +11,7 @@ Flaky tests are a massive drain on engineering resources. This tool extracts JUn
 - **Extract & Load:** Custom Python harvester that hits the GitHub REST API, unzips workflow artifacts in memory (`io.BytesIO`), and parses JUnit XML trees into a local SQLite database.
 - **Transform:** Pandas-driven analysis engine that groups test history and calculates variance `p * (1-p)`.
 - **Presentation:** Decoupled interfaces featuring a Typer/Rich CLI and a FastAPI REST endpoint.
+- **Defensive Design:** Implements idempotency to prevent duplicate records and handles REST API edge cases (403 Rate Limits, 410 Expired Artifacts, Malformed XML).
 
 ## 🚀 Getting Started
 
@@ -32,17 +33,19 @@ Create a `.env` file in the root directory and add your GitHub token:
 ## 💻 Usage
 
 **1. Harvest CI/CD Data**
+Harvest artifacts from any public repository by providing the owner and repo name.
 ```bash
-python harvester.py
+python harvester.py OVertly-Pleasant flaky-test-demo
 ```
 
 **2. View in Terminal (CLI)**
+Analyze the harvested SQLite database via terminal.
 ```bash
-python main.py --top 5 --show-passrate
+python main.py OVertly-Pleasant flaky-test-demo --top 5 --show-passrate
 ```
 
 **3. Serve via REST API**
 ```bash
 uvicorn server:app --reload
 ```
-Navigate to `http://localhost:8000/docs` to view the auto-generated Swagger UI.
+Navigate to `http://localhost:8000/analyse?owner=OVertly-Pleasant&repo=flaky-test-demo`
