@@ -46,9 +46,9 @@ def parse_test_results(xml_string):
                 
     return results
 
-def setup_database():
+def setup_database(db_name):
     """Creates the table if it doesn't exist."""
-    conn = sqlite3.connect('commits.db')
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS test_runs (
@@ -62,9 +62,9 @@ def setup_database():
     conn.commit()
     conn.close()
 
-def save_to_database(run_id, commit_hash, parsed_results):
+def save_to_database(db_name, run_id, commit_hash, parsed_results):
     """Inserts a list of parsed results into SQLite."""
-    conn = sqlite3.connect('commits.db')
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     
     data_to_insert = []
@@ -79,25 +79,39 @@ def save_to_database(run_id, commit_hash, parsed_results):
     conn.commit()
     conn.close()
 
+def is_run_harvested(db_name, run_id):
+    """Checks if a run_id already exists in the database."""
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM test_runs WHERE run_id = ?", (run_id,))
+    # fetchone() returns None if the row doesn't exist
+    exists = cursor.fetchone() is not None 
+    conn.close()
+    return exists
+
 @app.command()
 def run_pipeline(owner:str, repo:str):
-    setup_database()
+    db_name = f"{owner}_{repo}.db"
+    setup_database(db_name)
     artifacts = get_artifacts_list(owner,repo)
     print(f"Found {len(artifacts)} artifacts to process in {owner}/{repo}.")
     
     for artifact in artifacts:
         run_id = artifact["workflow_run"]["id"]
+        if is_run_harvested(db_name, run_id):
+            print(f"Skipping Run {run_id} (Already in database).")
+            continue
         commit_hash = artifact["workflow_run"]["head_sha"]
         download_url = artifact["archive_download_url"]
         
-        print(f"Processing Run ID: {run_id}...")
+        print(f"Downloading & Processing Run ID: {run_id}...")
         
         # 1. Download XML
         xml_content = download_xml_from_artifact(download_url)
         # 2. Parse XML
         parsed_results = parse_test_results(xml_content)
         # 3. Save to DB
-        save_to_database(run_id, commit_hash, parsed_results)
+        save_to_database(db_name, run_id, commit_hash, parsed_results)
         
     print("Data harvesting complete!")
 
