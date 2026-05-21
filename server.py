@@ -5,8 +5,9 @@ from analyzer import connect_n_process
 app = FastAPI()
 
 @app.get("/analyse")
-def analyse(top: int = 5, show_passrate: bool = False):
-    pass_rate = connect_n_process(top,'commits.db')
+def analyse(owner: str, repo: str, top: int = 5, show_passrate: bool = False):
+    database = f"{owner}_{repo}.db"
+    pass_rate = connect_n_process(top,database)
     output = ["test_name","flakiness"]
     if show_passrate:
         output+=["pass_rate"]
