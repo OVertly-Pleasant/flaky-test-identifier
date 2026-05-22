@@ -1,28 +1,29 @@
 # 🔍 Flaky Test Identifier
 
-An automated telemetry tool that analyzes CI/CD pipeline history to identify and rank statistically flaky tests. 
+An automated telemetry tool that analyzes CI/CD pipeline history to identify and rank statistically flaky tests using multi-dimensional time-series analysis.
 
 ## 📖 Overview
-Flaky tests are a massive drain on engineering resources. This tool extracts JUnit XML artifact data from GitHub Actions, stores run history locally, and applies statistical variance models to assign a "Flakiness Score" to every test in a repository.
+Flaky tests are a massive drain on engineering resources. Simple pass/fail variance is often misleading, falling victim to false positives like permanently broken code or low-run insignificance. 
 
-<img width="581" height="142" alt="Screenshot 2026-05-20 at 22 49 55" src="https://github.com/user-attachments/assets/a87f26e7-7c33-4725-baff-21a529c42a83" />
+This tool extracts JUnit XML artifact data from GitHub Actions, stores run history locally, and passes the data through a modular "Pipeline of Evaluators." Instead of simple variance, it calculates chronological flip rates, execution time anomalies, and time-of-day clustering to assign an "Ultimate Chaos Score" to every test.
 
-### Architecture
-- **Extract & Load:** Custom Python harvester that hits the GitHub REST API, unzips workflow artifacts in memory (`io.BytesIO`), and parses JUnit XML trees into a local SQLite database.
-- **Transform:** Pandas-driven analysis engine that groups test history and calculates variance `p * (1-p)`.
-- **Presentation:** Decoupled interfaces featuring a Typer/Rich CLI and a FastAPI REST endpoint.
-- **Defensive Design:** Implements idempotency to prevent duplicate records and handles REST API edge cases (403 Rate Limits, 410 Expired Artifacts, Malformed XML).
+## 🧠 Analysis Modules
+- **Statistical Significance Filter:** Automatically ignores tests with `< 5` runs to prevent "Law of Small Numbers" false positives.
+- **Flip Rate:** Chronological transition counting to detect true status flip-flops (Pass $\rightarrow$ Fail $\rightarrow$ Pass) to ignore standard regressions.
+- **Duration Anomaly:** Analyzes the execution time delta between passed and failed runs to detect resource starvation, timeouts, and database locks.
+- **Time Anomaly:** Extracts ISO timestamps to detect if failures cluster around specific hours of the day (e.g., UTC timezone bugs or high-traffic periods).
+
+## 🏗️ Architecture
+- **Extract & Load:** Custom Python Harvester that interacts with the GitHub REST API, unzips workflow artifacts in memory (`io.BytesIO`), and parses JUnit XML trees into a dynamic SQLite database (`owner_repo.db`).
+- **Defensive Design:** Implements idempotency to prevent duplicate artifact ingestion and handles REST API edge cases (403 Rate Limits, 410 Expired Artifacts, Malformed XML).
+- **Presentation:** Decoupled interfaces featuring an interactive Typer/Rich CLI and a FastAPI REST endpoint.
 
 ## 🚀 Getting Started
-
-### Prerequisites
-1. Python 3.10+
-2. A GitHub Personal Access Token (PAT)
 
 ### Setup
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/OVertly-Pleasant/flaky-test-identifier.git
+git clone https://github.com/YOUR_USERNAME/flaky-test-identifier.git
 cd flaky-test-identifier
 pip install -r requirements.txt
 ```
@@ -41,18 +42,15 @@ python harvester.py OVertly-Pleasant flaky-test-demo
 **2. View in Terminal (CLI)**
 Analyze the harvested SQLite database via terminal.
 ```bash
-python main.py OVertly-Pleasant flaky-test-demo --top 5 --show-passrate
+python main.py OVertly-Pleasant flaky-test-demo --top 10
 ```
 
 **3. Serve via REST API**
 ```bash
 uvicorn server:app --reload
 ```
-Navigate to `http://localhost:8000/analyse?owner=OVertly-Pleasant&repo=flaky-test-demo`
+Navigate to `http://localhost:8000/analyse?owner=OVertly-Pleasant&repo=flaky-test-demo` to view the JSON payload.
 
+---
 ### ⚠️ Known Limitations
 - **Same-Commit Retry Masking:** Currently disabled. Due to GitHub Actions v4 Artifact Immutability (Issue #323), re-running all jobs deletes previous artifacts for that commit. Until GitHub patches this upstream API behavior, the harvester cannot reliably capture multi-attempt variance on a single commit hash.
-
-### 🧠 Analysis Modules
-- **Flip Rate:** Chronological transition counting to detect true status flip-flops.
-- **Duration Anomaly:** Analyzes the delta between passed and failed execution times to detect resource starvation and timeout clustering.
