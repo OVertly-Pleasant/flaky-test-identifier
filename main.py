@@ -20,6 +20,7 @@ def analyse(owner: str = typer.Argument(), repo: str = typer.Argument(), top: in
     table.add_column("Ultimate Score", justify="center", style="bold white")
     table.add_column("Flip Rate", justify="center")
     table.add_column("Duration Anomaly", justify="center")
+    table.add_column("Time Anomaly", justify="center")
     table.add_column("Pass Rate", justify="center")
 
     for idx, row in report.iterrows():
@@ -28,9 +29,10 @@ def analyse(owner: str = typer.Argument(), repo: str = typer.Argument(), top: in
         ultimate = color_flakiness(row['ultimate_score'])
         flip = color_flakiness(row['flip_score'])
         duration = color_flakiness(row['duration_score'])
+        time_score = color_flakiness(row['time_score'])
         pass_rate = f"{row['pass_rate']:.0%}"
         
-        table.add_row(test_name, ultimate, flip, duration, pass_rate)
+        table.add_row(test_name, ultimate, flip, duration, time_score, pass_rate)
 
     console.print(table)
 
