@@ -7,6 +7,8 @@ Flaky tests are a massive drain on engineering resources. Simple pass/fail varia
 
 This tool extracts JUnit XML artifact data from GitHub Actions, stores run history locally, and passes the data through a modular "Pipeline of Evaluators." Instead of simple variance, it calculates chronological flip rates, execution time anomalies, and time-of-day clustering to assign an "Ultimate Chaos Score" to every test.
 
+<img width="739" height="172" alt="Screenshot 2026-05-22 at 22 01 46" src="https://github.com/user-attachments/assets/b9267a54-52f7-47dd-9adf-5e35603f6c50" />
+
 ## 🧠 Analysis Modules
 - **Statistical Significance Filter:** Automatically ignores tests with `< 5` runs to prevent "Law of Small Numbers" false positives.
 - **Flip Rate:** Chronological transition counting to detect true status flip-flops (Pass $\rightarrow$ Fail $\rightarrow$ Pass) to ignore standard regressions.
@@ -23,7 +25,7 @@ This tool extracts JUnit XML artifact data from GitHub Actions, stores run histo
 ### Setup
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/YOUR_USERNAME/flaky-test-identifier.git
+git clone https://github.com/OVertly-Pleasant/flaky-test-identifier.git
 cd flaky-test-identifier
 pip install -r requirements.txt
 ```
