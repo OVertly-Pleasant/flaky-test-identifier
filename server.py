@@ -4,13 +4,14 @@ from analyzer import generate_flakiness_report
 app = FastAPI()
 
 @app.get("/analyse")
-def analyse(owner: str, repo: str, top: int = 5, show_passrate: bool = False):
+def analyse(owner: str, repo: str, top: int = 5):
     database = f"{owner}_{repo}.db"
-    pass_rate = generate_flakiness_report(top,database)
-    output = ["test_name","flakiness"]
-    if show_passrate:
-        output+=["pass_rate"]
-    return pass_rate[output].to_dict(orient='records')
+    report = generate_flakiness_report(top, database)
+    
+    if report.empty:
+        return {"error": f"No data found for {owner}/{repo}"}
+        
+    return report.to_dict(orient='records')
 
 @app.get("/")
 def root():

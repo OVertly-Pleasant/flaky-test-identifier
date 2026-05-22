@@ -7,23 +7,31 @@ app = typer.Typer()
 console = Console()
 
 @app.command()
-def analyse(owner: str = typer.Argument(),repo: str = typer.Argument(), top: int = 5, show_passrate: bool = False):
+def analyse(owner: str = typer.Argument(), repo: str = typer.Argument(), top: int = 5):
     database = f"{owner}_{repo}.db"
-    pass_rate = generate_flakiness_report(top,database)
-    header = f"Flaky Test Analysis of {database}"
-    table = Table(title=header)
-    table.add_column("Test",justify="center",no_wrap=True)
-    table.add_column("Flakiness",justify="center",no_wrap=True)
-    if show_passrate:
-        table.add_column("Pass Rate",justify="center",no_wrap=True)
-    for idx,row in pass_rate.iterrows():
+    report = generate_flakiness_report(top, database)
+    
+    if report.empty:
+        console.print(f"[red]No data found in {database}. Run harvester first.[/red]")
+        return
+
+    table = Table(title=f"Flaky Test Analysis: {owner}/{repo}")
+    table.add_column("Test Name", justify="left", style="cyan")
+    table.add_column("Ultimate Score", justify="center", style="bold white")
+    table.add_column("Flip Rate", justify="center")
+    table.add_column("Duration Anomaly", justify="center")
+    table.add_column("Pass Rate", justify="center")
+
+    for idx, row in report.iterrows():
         test_name = str(row['test_name'])
-        flaky_val = color_flakiness(row["flakiness"])
-        if show_passrate:
-            pass_val = f"{row['pass_rate']:.0%}" 
-            table.add_row(test_name, flaky_val, pass_val)
-        else:
-            table.add_row(test_name, flaky_val)
+        
+        ultimate = color_flakiness(row['ultimate_score'])
+        flip = color_flakiness(row['flip_score'])
+        duration = color_flakiness(row['duration_score'])
+        pass_rate = f"{row['pass_rate']:.0%}"
+        
+        table.add_row(test_name, ultimate, flip, duration, pass_rate)
+
     console.print(table)
 
 def color_flakiness(val: float):
