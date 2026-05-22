@@ -49,3 +49,10 @@ python main.py OVertly-Pleasant flaky-test-demo --top 5 --show-passrate
 uvicorn server:app --reload
 ```
 Navigate to `http://localhost:8000/analyse?owner=OVertly-Pleasant&repo=flaky-test-demo`
+
+### ⚠️ Known Limitations
+- **Same-Commit Retry Masking:** Currently disabled. Due to GitHub Actions v4 Artifact Immutability (Issue #323), re-running all jobs deletes previous artifacts for that commit. Until GitHub patches this upstream API behavior, the harvester cannot reliably capture multi-attempt variance on a single commit hash.
+
+### 🧠 Analysis Modules
+- **Flip Rate:** Chronological transition counting to detect true status flip-flops.
+- **Duration Anomaly:** Analyzes the delta between passed and failed execution times to detect resource starvation and timeout clustering.
