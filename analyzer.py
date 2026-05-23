@@ -44,10 +44,13 @@ def score_time_correlation(df):
         return pd.DataFrame({'test_name': df['test_name'].unique(), 'time_score': [0.0] * df['test_name'].nunique()})
 
     failed_df['hour'] = pd.to_datetime(failed_df['run_at']).dt.hour
+
+    def time_score_for_test(x):
+        if len(x) < 3:  # Need at least 3 failures to establish a statistical pattern
+            return 0.0
+        return x['hour'].value_counts().max() / len(x)
     
-    time_metrics = failed_df.groupby('test_name').apply(
-        lambda x: x['hour'].value_counts().max() / len(x)
-    ).reset_index(name='time_score')
+    time_metrics = failed_df.groupby('test_name').apply(time_score_for_test).reset_index(name='time_score')
     
     all_tests = pd.DataFrame({'test_name': df['test_name'].unique()})
     return pd.merge(all_tests, time_metrics, on='test_name', how='left').fillna(0.0)
@@ -76,8 +79,8 @@ def generate_flakiness_report(max_results: int, db_path: str):
     report = pd.merge(flip_df, duration_df, on='test_name', how='outer')
     report = pd.merge(report, time_df, on='test_name', how='outer')
 
-    report['ultimate_score'] = (report['flip_score'] + report['duration_score'] + report['time_score']) / 3
+    report['composite_score'] = (report['flip_score']*0.6 + report['duration_score']*0.2 + report['time_score']*0.2)
 
-    final_report = report.sort_values('ultimate_score', ascending=False).head(max_results)
+    final_report = report.sort_values('composite_score', ascending=False).head(max_results)
     
     return final_report.reset_index()
