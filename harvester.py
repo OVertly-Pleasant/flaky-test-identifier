@@ -124,7 +124,7 @@ def run_pipeline(owner:str, repo:str):
     print(f"Found {len(artifacts)} artifacts to process in {owner}/{repo}.")
 
     for artifact in artifacts:
-        run_id = artifact["id"]
+        run_id = artifact["workflow_run"]["id"]
         if is_run_harvested(db_name, run_id):
             print(f"Skipping Run {run_id} (Already in database).")
             continue
