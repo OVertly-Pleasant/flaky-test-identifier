@@ -7,7 +7,7 @@ Flaky tests are a massive drain on engineering resources. Simple pass/fail varia
 
 This tool extracts JUnit XML artifact data from GitHub Actions, stores run history locally, and passes the data through a modular "Pipeline of Evaluators." Instead of simple variance, it calculates chronological flip rates, execution time anomalies, and time-of-day clustering to assign an "Ultimate Chaos Score" to every test.
 
-<img width="739" height="172" alt="Screenshot 2026-05-22 at 22 01 46" src="https://github.com/user-attachments/assets/b9267a54-52f7-47dd-9adf-5e35603f6c50" />
+<img width="755" height="169" alt="Screenshot 2026-05-23 at 13 34 26" src="https://github.com/user-attachments/assets/92a2c7ca-e521-4966-a2af-00e59cf009ec" />
 
 ## 🧠 Analysis Modules
 - **Statistical Significance Filter:** Automatically ignores tests with `< 5` runs to prevent "Law of Small Numbers" false positives.
