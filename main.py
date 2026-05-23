@@ -17,7 +17,7 @@ def analyse(owner: str = typer.Argument(), repo: str = typer.Argument(), top: in
 
     table = Table(title=f"Flaky Test Analysis: {owner}/{repo}")
     table.add_column("Test Name", justify="left", style="cyan")
-    table.add_column("Ultimate Score", justify="center", style="bold white")
+    table.add_column("Composite Score", justify="center", style="bold white")
     table.add_column("Flip Rate", justify="center")
     table.add_column("Duration Anomaly", justify="center")
     table.add_column("Time Anomaly", justify="center")
@@ -26,13 +26,13 @@ def analyse(owner: str = typer.Argument(), repo: str = typer.Argument(), top: in
     for idx, row in report.iterrows():
         test_name = str(row['test_name'])
         
-        ultimate = color_flakiness(row['ultimate_score'])
+        composite = color_flakiness(row['composite_score'])
         flip = color_flakiness(row['flip_score'])
         duration = color_flakiness(row['duration_score'])
         time_score = color_flakiness(row['time_score'])
         pass_rate = f"{row['pass_rate']:.0%}"
         
-        table.add_row(test_name, ultimate, flip, duration, time_score, pass_rate)
+        table.add_row(test_name, composite, flip, duration, time_score, pass_rate)
 
     console.print(table)
 
